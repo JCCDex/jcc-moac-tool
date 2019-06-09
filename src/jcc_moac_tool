@@ -1,0 +1,132 @@
+#!/usr/bin/env node
+
+const program = require('commander');
+const fs = require('fs');
+const utils = require('jcc-moac-utils');
+const Wallet = require('ethereumjs-wallet');
+const Keystore = require('./jcc_moac_keystore');
+const Chain3 = require('chain3');
+
+function getBaseHome() {
+  return (process.env.HOME || process.env.USERPROFILE) + '/.jcc_moac_tool'
+}
+
+program.version('0.0.1')
+program.usage('--help', 'Show moac_tools help')
+
+let _description = 'MOAC command line tools'
+program.description(_description)
+
+program.option('--config <config file>', 'specified config file, defaut is ' + getBaseHome() + '/config.json')
+program.option('--wallet_create', 'Create new MOAC wallet')
+program.option('--import_private_to_keystore', 'import private key to keystore file')
+program.option('--keystore <keystore file>', 'keystore file path')
+program.option('--save_wallet', 'save wallet to keystore file when create')
+program.option('--network <network id>', 'specified MOAC network id, mainnet is 99, testnet is 101')
+program.option('--server <MOAC node address>', 'node rpc address')
+program.option('--balance <Wallet address>', 'get balance of address')
+program.option('--transfer <Destination address>', 'destination address, source address specified by keystore or config')
+program.option('--amount <amount>', 'transfer amount')
+program.option('--nonce <number>', 'specified nonce')
+program.option('--gas_price <number>', 'specified gasPrice, default 20000000000')
+program.option('--gas_limit <number>', 'specified gas limit, default 20000')
+
+program.parse(process.argv);
+
+if (program.wallet_create) {
+  if (!program.save_wallet) {
+    Keystore.processCreateWallet()
+  }
+
+  Keystore.saveKeystore();
+
+  return
+}
+
+if (program.import_private_to_keystore) {
+  Keystore.importToKeystore();
+  return;
+}
+
+function getNetwork(_network) {
+  let type = typeof _network
+  if (type === 'number') {
+    _options.network = _network
+  }
+  if (type === 'string'){
+    _options.network = _network.toLowerCase() === 'main' ? 99 : 101
+  }
+}
+
+// 获取配置文件
+let _config = program.config
+let _options = {"network":99}
+
+// 如果文件位置没有通过参数传递
+if (!!!_config) {
+  _config = getBaseHome() + '/config.json'
+}
+
+// 读取文件
+if (fs.existsSync(_config)) {
+  try {
+    _options = Object.assign(_options, JSON.parse(fs.readFileSync(_config, 'utf-8')))
+    if (!_options.gasLimit) {
+      _options.gasLimit = 20000;
+    }
+    if (!_options.gasPrice) {
+      _options.gasPrice = 20000000000;
+    }
+  }
+  catch(e){
+    console.log('Parse config file fail, check and correct it', e)
+    process.exit()
+  }
+}
+
+getNetwork(program.network)
+
+if (program.keystore) {
+  _options.wallet = Object.assign(_options.wallet, Keystore.getWalletFromKeystore(program.keystore));
+}
+
+if (!isNaN(Number(program.gas_limit))) {
+  _options.gasLimit = Number(program.gas_limit);
+}
+if (!isNaN(Number(program.gas_price))) {
+  _options.gasPrice = Number(program.gas_price);
+}
+
+async function getBalance() {
+  let balance = await inst.getBalance(program.balance);
+  console.log('balance:', balance);
+}
+
+async function transfer(dest, amount) {
+  let nonce = await inst.getNonce(_options.wallet.address);
+  // console.log('nonce:', nonce);
+  let gasPrice = await inst.getGasPrice(_options.gasPrice);
+  // console.log('gasPrice:', gasPrice, 'gasLimit:', _options.gasLimit);
+  let tx = inst.getTx(_options.wallet.address, dest, nonce, _options.gasLimit, gasPrice, inst.getChain3().toSha(amount, 'mc'), '');
+  // console.log(JSON.stringify(tx));
+  let hash = await inst.sendRawSignedTransaction(inst.getChain3().signTransaction(tx, _options.wallet.secret));
+  console.log('hash:', hash);
+}
+
+// 初始化连接
+let inst = new utils.Moac(_options.server, _options.network == 99)
+inst.initChain3();
+if (program.balance) {
+  getBalance();
+  return;
+}
+
+if (program.transfer) {
+  var amount = Number(program.amount);
+  if (isNaN(amount)) {
+    console.log('amount is', program.amount, 'invalid');
+    process.exit();
+  }
+  transfer(program.transfer, amount);
+  return;
+}
