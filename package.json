@@ -31,8 +31,9 @@
     "commander": "^2.20.0",
     "ethereumjs-util": "^6.1.0",
     "ethereumjs-wallet": "^0.6.3",
+    "bignumber.js": "^9.0.0",
     "fs": "0.0.1-security",
-    "jcc-moac-utils": "^0.1.2",
+    "jcc-moac-utils": "^0.2.2",
     "readline-sync": "^1.4.9"
   },
   "devDependencies": {
@@ -52,6 +53,6 @@
     "gulp-babel": "^8.0.0",
     "gulp-eslint": "^5.0.0",
     "mocha": "^5.2.0",
-    "nyc": "^13.3.0"
+    "nyc": "^14.1.1"
   }
 }

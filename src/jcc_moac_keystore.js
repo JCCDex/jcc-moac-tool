@@ -7,7 +7,7 @@ var ethUtil = require('ethereumjs-util');
 var Writable = require('stream').Writable;
 
 var mutableStdout = new Writable({
-  write: function (chunk, encoding, callback) {
+  write: function(chunk, encoding, callback) {
     if (!this.muted) {
       process.stdout.write(chunk, encoding);
       console.log('-');
@@ -49,11 +49,17 @@ function importToKeystore() {
   return
 }
 
-function getWalletFromKeystore(_file) {
+function getWalletFromKeystore(_file, _password) {
   if (fs.existsSync(_file)) {
     try {
       var ks = JSON.parse(fs.readFileSync(_file, 'utf-8'));
-      var password = readlineSync.question('Password:', { hideEchoBack: true });
+      var password;
+      if (!_password) {
+        password = readlineSync.question('Password:', { hideEchoBack: true });
+      } else {
+        password = _password;
+      }
+
       var w = Wallet.fromV3(ks, password);
       // console.log(w.getAddressString(), w.getPrivateKeyString());
       return { address: w.getAddressString(), secret: w.getPrivateKeyString() }
