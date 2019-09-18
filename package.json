@@ -1,6 +1,6 @@
 {
   "name": "jcc_moac_tool",
-  "version": "0.0.1",
+  "version": "0.0.6",
   "description": "jccdex jcc moac tool",
   "files": [
     "lib"
@@ -10,6 +10,10 @@
     "deploy": "./publish.sh",
     "test": "gulp"
   },
+  "bin": {
+    "jcc_moac_tool": "src/jcc_moac_tool",
+    "jcc_moac_keystore.js": "src/jcc_moac_keystore.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/JCCDex/jcc_moac_tool.git"
@@ -18,6 +22,7 @@
     "tool",
     "console",
     "jcc",
+    "moac",
     "decentralized",
     "cross-chain"
   ],
