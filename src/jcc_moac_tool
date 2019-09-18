@@ -12,7 +12,7 @@ function getBaseHome() {
   return (process.env.HOME || process.env.USERPROFILE) + '/.jcc_moac_tool'
 }
 
-program.version('0.0.8')
+program.version('0.0.9')
 program.usage('--help', 'Show moac_tools help')
 
 let _description = 'MOAC command line tools'
@@ -291,7 +291,6 @@ async function callContract() {
     if (program.amount) {
       amount = program.amount + "";
     }
-    console.log(_options, amount);
     const hash = await inst.sendTransactionWithCallData(_options.wallet.secret, program.contractAddr, amount, calldata, _options);
     console.log("hash:", hash);
   }
