@@ -12,7 +12,7 @@ function getBaseHome() {
   return (process.env.HOME || process.env.USERPROFILE) + '/.jcc_moac_tool'
 }
 
-program.version('0.0.6')
+program.version('0.0.7')
 program.usage('--help', 'Show moac_tools help')
 
 let _description = 'MOAC command line tools'
@@ -147,7 +147,7 @@ async function getTransactionReceipt(hash) {
 async function transfer(dest, amount) {
   let nonce = await inst.getNonce(_options.wallet.address);
   let gasPrice = await inst.getGasPrice(_options.gasPrice);
-  let tx = inst.getTx(_options.wallet.address, dest, nonce, _options.gasLimit, gasPrice, amount, '');
+  let tx = inst.getTx(_options.wallet.address, dest, nonce, _options.gasLimit, gasPrice, inst._chain3.toSha(amount), '');
   let hash = await inst.sendRawSignedTransaction(inst.signTransaction(tx, _options.wallet.secret));
   console.log('transfer hash:', hash);
 }
