@@ -284,7 +284,8 @@ async function callContract() {
   const { stateMutability } = abiItem;
   if (stateMutability === "view" || stateMutability === "pure") {
     let ret = await eval(getMethodCall());
-    console.log("result:", ret.toString(10));
+    // console.log("result:", ret.toString(10));
+    console.log("result:", JSON.stringify(ret));
   } else {
     const calldata = await eval(getMethodCall());
     let amount = "0";
