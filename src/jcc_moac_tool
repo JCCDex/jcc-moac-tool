@@ -7,12 +7,13 @@ const utils = require('jcc-moac-utils');
 const Wallet = require('ethereumjs-wallet');
 const Keystore = require('./jcc_moac_keystore');
 const Chain3 = require('chain3');
+const SolidityFunction = require("chain3/lib/chain3/function");
 
 function getBaseHome() {
   return (process.env.HOME || process.env.USERPROFILE) + '/.jcc_moac_tool'
 }
 
-program.version('0.0.9')
+program.version('0.0.11')
 program.usage('--help', 'Show moac_tools help')
 
 let _description = 'MOAC command line tools'
@@ -260,6 +261,23 @@ if (program.transfer) {
   transfer(program.transfer, amount);
   return;
 }
+
+const call = function() {
+  var args = Array.prototype.slice.call(arguments).filter(function(a) { return a !== undefined; });
+  var callback = this.extractCallback(args);
+  var defaultBlock = this.extractDefaultBlock(args);
+  var payload = this.toPayload(args);
+
+
+  var output = this._mc.call(payload, defaultBlock);
+  return output;
+}
+
+Object.defineProperty(SolidityFunction.prototype, "call", {
+  get: function() {
+    return call;
+  }
+});
 
 function getMethodCall() {
   if (!program.parameters) {
