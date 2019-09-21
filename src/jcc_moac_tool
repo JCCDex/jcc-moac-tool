@@ -2,12 +2,29 @@
 
 const program = require('commander');
 const fs = require('fs');
-const BigNumber = require('bignumber.js');
 const utils = require('jcc-moac-utils');
-const Wallet = require('ethereumjs-wallet');
 const Keystore = require('./jcc_moac_keystore');
-const Chain3 = require('chain3');
 const SolidityFunction = require("chain3/lib/chain3/function");
+const ethers = require("ethers");
+const abiCoder = ethers.utils.defaultAbiCoder;
+
+Object.defineProperty(SolidityFunction.prototype, "call", {
+  get() {
+    return function() {
+      return new Promise((resolve, reject) => {
+        const args = Array.prototype.slice.call(arguments).filter(function(a) {
+          return a !== undefined;
+        });
+        const defaultBlock = this.extractDefaultBlock(args);
+        const payload = this.toPayload(args);
+        this._mc.call(payload, defaultBlock, function(error, output) {
+          if (error) return reject(error);
+          return resolve(output);
+        });
+      });
+    };
+  }
+});
 
 function getBaseHome() {
   return (process.env.HOME || process.env.USERPROFILE) + '/.jcc_moac_tool'
@@ -103,8 +120,7 @@ try {
   if (!_options.gasPrice) {
     _options.gasPrice = 20000000000;
   }
-}
-catch (e) {
+} catch (e) {
   console.log('Parse config file fail, check and correct it', e)
   process.exit()
 }
@@ -167,8 +183,7 @@ function getFile(filename) {
   }
   try {
     return JSON.parse(fs.readFileSync(filename, 'utf-8'))
-  }
-  catch (e) {
+  } catch (e) {
     console.log('get file ', filename, 'error', e)
     process.exit(-1)
   }
@@ -262,23 +277,6 @@ if (program.transfer) {
   return;
 }
 
-const call = function() {
-  var args = Array.prototype.slice.call(arguments).filter(function(a) { return a !== undefined; });
-  var callback = this.extractCallback(args);
-  var defaultBlock = this.extractDefaultBlock(args);
-  var payload = this.toPayload(args);
-
-
-  var output = this._mc.call(payload, defaultBlock);
-  return output;
-}
-
-Object.defineProperty(SolidityFunction.prototype, "call", {
-  get: function() {
-    return call;
-  }
-});
-
 function getMethodCall() {
   if (!program.parameters) {
     return "sc.callABI(\"" + program.method + "\")";
@@ -291,7 +289,6 @@ async function callContract() {
   let abi = _json.abi;
   let sc = new utils.smartContract();
   sc.init(program.contractAddr, inst, abi);
-  let chain3 = inst._chain3;
 
   // 确定接口类型
   const abiItem = abi.find((item) => item.name == program.method);
@@ -301,9 +298,9 @@ async function callContract() {
   }
   const { stateMutability } = abiItem;
   if (stateMutability === "view" || stateMutability === "pure") {
-    let ret = await eval(getMethodCall());
-    // console.log("result:", ret.toString(10));
-    console.log("result:", JSON.stringify(ret));
+    const byte = await eval(getMethodCall());
+    const decodeData = abiCoder.decode(abiItem.outputs, byte);
+    console.log("result:", JSON.stringify(decodeData, null, 2));
   } else {
     const calldata = await eval(getMethodCall());
     let amount = "0";

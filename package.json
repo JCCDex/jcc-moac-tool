@@ -33,10 +33,11 @@
   },
   "homepage": "https://github.com/JCCDex/jcc_moac_tool#readme",
   "dependencies": {
+    "bignumber.js": "^9.0.0",
     "commander": "^2.20.0",
     "ethereumjs-util": "^6.1.0",
     "ethereumjs-wallet": "^0.6.3",
-    "bignumber.js": "^9.0.0",
+    "ethers": "^4.0.37",
     "fs": "0.0.1-security",
     "jcc-moac-utils": "^0.2.2",
     "readline-sync": "^1.4.9"
