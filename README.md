@@ -11,7 +11,7 @@ jcc_moac_tool是一个命令行工具，可以快速的通过参数或者配置�
 ## Installation 安装
 
 ```bash
-sudo npm install -g jcc_moac_tool
+sudo npm install -g jcc_moac_tool --unsafe-perm=true
 ```
 
 ## wallet and configuration 钱包和配置

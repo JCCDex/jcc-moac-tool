@@ -30,7 +30,7 @@ function getBaseHome() {
   return (process.env.HOME || process.env.USERPROFILE) + '/.jcc_moac_tool'
 }
 
-program.version('0.0.11')
+program.version('0.0.13')
 program.usage('--help', 'Show moac_tools help')
 
 let _description = 'MOAC command line tools'
@@ -292,6 +292,8 @@ async function callContract() {
   let abi = _json.abi;
   let sc = new utils.smartContract();
   sc.init(program.contractAddr, inst, abi);
+  // 该变量是为用户在外部传入chain3的函数调用 eval(getMethodCall()) 时用的
+  let chain3 = inst._chain3
 
   // 确定接口类型
   const abiItem = abi.find((item) => item.name == program.method);
