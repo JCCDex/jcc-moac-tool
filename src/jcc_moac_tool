@@ -2,6 +2,7 @@
 
 const program = require('commander');
 const fs = require('fs');
+const BigNumber = require('bignumber.js');
 const utils = require('jcc-moac-utils');
 const Keystore = require('./jcc_moac_keystore');
 const SolidityFunction = require("chain3/lib/chain3/function");
@@ -30,7 +31,7 @@ function getBaseHome() {
   return (process.env.HOME || process.env.USERPROFILE) + '/.jcc_moac_tool'
 }
 
-program.version('0.0.13')
+program.version('0.0.14')
 program.usage('--help', 'Show moac_tools help')
 
 let _description = 'MOAC command line tools'
@@ -128,9 +129,6 @@ try {
 getNetwork(program.network)
 
 if (program.keystore) {
-  if (!_options.wallet) {
-    _options.wallet = {};
-  }
   _options.wallet = Object.assign(_options.wallet, Keystore.getWalletFromKeystore(program.keystore, program.password));
 }
 
