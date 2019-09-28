@@ -302,8 +302,12 @@ async function callContract() {
   const { stateMutability } = abiItem;
   if (stateMutability === "view" || stateMutability === "pure") {
     const byte = await eval(getMethodCall());
-    const decodeData = abiCoder.decode(abiItem.outputs, byte);
-    console.log("result:", JSON.stringify(decodeData, null, 2));
+    if (byte !== "0x") {
+      const decodeData = abiCoder.decode(abiItem.outputs, byte);
+      console.log("result:", JSON.stringify(decodeData, null, 2));
+    } else {
+      console.log("result: return empty response");
+    }
   } else {
     const calldata = await eval(getMethodCall());
     let amount = "0";
