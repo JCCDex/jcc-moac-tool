@@ -31,7 +31,7 @@ function getBaseHome() {
   return (process.env.HOME || process.env.USERPROFILE) + '/.jcc_moac_tool'
 }
 
-program.version('0.0.14')
+program.version('0.0.15')
 program.usage('--help', 'Show moac_tools help')
 
 let _description = 'MOAC command line tools'
