@@ -59,6 +59,7 @@ program.option('--amount <amount>', 'transfer amount')
 program.option('--deploy <contract json file>', 'deploy contract, if have parameter, set it in --parameters')
 
 program.option('--nonce <number>', 'specified nonce')
+program.option('--getNonce', 'get current nonce')
 program.option('--gas_price <number>', 'specified gasPrice, default 20000000000')
 program.option('--gas_limit <number>', 'specified gas limit, default 20000')
 
@@ -146,6 +147,10 @@ async function getBalance() {
   let balance = await inst.getBalance(program.balance);
   console.log('balance:', balance);
 }
+async function getCurrentNonce(address) {
+  let nonce = await inst.getNonce(address);
+  console.log("current nonce:", nonce.toString());
+}
 
 async function getBlock(block) {
   let info = await inst.getBlock(block);
@@ -161,9 +166,15 @@ async function getTransactionReceipt(hash) {
   let info = await inst.getTransactionReceipt(hash);
   console.log('transaction receipt:', JSON.stringify(info, null, 2));
 }
-
+async function getNonce(address) {
+  if (!program.nonce) {
+    let n = await inst.getNonce(_options.wallet.address);
+    return n;
+  }
+  return program.nonce;
+}
 async function transfer(dest, amount) {
-  let nonce = await inst.getNonce(_options.wallet.address);
+  let nonce = await getNonce(_options.wallet.address);
   let gasPrice = await inst.getGasPrice(_options.gasPrice);
   let tx = inst.getTx(_options.wallet.address, dest, nonce, _options.gasLimit, gasPrice, amount, '');
   let hash = await inst.sendRawSignedTransaction(inst.signTransaction(tx, _options.wallet.secret));
@@ -214,7 +225,7 @@ async function deploy(compiledJson) {
     const typename = constructor.inputs.map((input) => input.type);
     calldata = _json.bytecode + inst._chain3.encodeParams(typename, eval('[' + program.parameters + ']'));
   }
-  let nonce = await inst.getNonce(_options.wallet.address);
+  let nonce = await getNonce(_options.wallet.address);
   let gasPrice = await inst.getGasPrice(_options.gasPrice);
   let tx = inst.getTx(_options.wallet.address, null, nonce, _options.gasLimit, gasPrice, amount, calldata);
   let signed = await inst.signTransaction(tx, _options.wallet.secret);
@@ -267,7 +278,10 @@ if (program.balance) {
   getBalance();
   return;
 }
-
+if (program.getNonce) {
+  getCurrentNonce(_options.wallet.address);
+  return;
+}
 if (program.transfer) {
   var amount = Number(program.amount);
   if (isNaN(amount)) {
@@ -302,6 +316,7 @@ async function callContract() {
   const { stateMutability } = abiItem;
   if (stateMutability === "view" || stateMutability === "pure") {
     const byte = await eval(getMethodCall());
+    console.log(byte);
     if (byte !== "0x") {
       const decodeData = abiCoder.decode(abiItem.outputs, byte);
       console.log("result:", JSON.stringify(decodeData, null, 2));
