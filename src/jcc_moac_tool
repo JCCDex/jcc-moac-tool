@@ -329,6 +329,9 @@ async function callContract() {
     if (program.amount) {
       amount = program.amount + "";
     }
+    if (!!program.nonce) {
+      _options.nonce = program.nonce;
+    }
     const hash = await inst.sendTransactionWithCallData(_options.wallet.secret, program.contractAddr, amount, calldata, _options);
     console.log("hash:", hash);
   }
