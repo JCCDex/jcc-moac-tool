@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
-const program = require('commander');
-const fs = require('fs');
-const BigNumber = require('bignumber.js');
-const utils = require('jcc-moac-utils');
-const Keystore = require('./jcc_moac_keystore');
+const program = require("commander");
+const fs = require("fs");
+const BigNumber = require("bignumber.js");
+const utils = require("jcc-moac-utils");
+const Keystore = require("./jcc_moac_keystore");
 const SolidityFunction = require("chain3/lib/chain3/function");
 const ethers = require("ethers");
 const abiCoder = ethers.utils.defaultAbiCoder;
@@ -28,61 +28,61 @@ Object.defineProperty(SolidityFunction.prototype, "call", {
 });
 
 function getBaseHome() {
-  return (process.env.HOME || process.env.USERPROFILE) + '/.jcc_moac_tool'
+  return (process.env.HOME || process.env.USERPROFILE) + "/.jcc_moac_tool";
 }
 
-program.version('0.0.17')
-program.usage('--help', 'Show moac_tools help')
+program.version("0.0.17");
+program.usage("--help", "Show moac_tools help");
 
-let _description = 'MOAC command line tools'
-program.description(_description)
+let _description = "MOAC command line tools";
+program.description(_description);
 
-program.option('--config <config file>', 'specified config file, defaut is ' + getBaseHome() + '/config.json')
+program.option("--config <config file>", "specified config file, defaut is " + getBaseHome() + "/config.json");
 
-program.option('--wallet_create', 'Create new MOAC wallet')
-program.option('--save_wallet', 'save wallet to keystore file when create')
-program.option('--import_private_to_keystore', 'import private key to keystore file')
-program.option('--keystore <keystore file>', 'keystore file path')
-program.option('--password <keystore file password>', 'keystore password')
+program.option("--wallet_create", "Create new MOAC wallet");
+program.option("--save_wallet", "save wallet to keystore file when create");
+program.option("--import_private_to_keystore", "import private key to keystore file");
+program.option("--keystore <keystore file>", "keystore file path");
+program.option("--password <keystore file password>", "keystore password");
 
-program.option('--network <network id>', 'specified MOAC network id, mainnet is 99, testnet is 101')
-program.option('--server <MOAC node address>', 'node rpc address')
+program.option("--network <network id>", "specified MOAC network id, mainnet is 99, testnet is 101");
+program.option("--server <MOAC node address>", "node rpc address");
 
-program.option('--block <block number>', 'get block info by number or latest')
-program.option('--transaction <hash>', 'get transaction by hash')
-program.option('--receipt <hash>', 'get transaction receipt by hash')
+program.option("--block <block number>", "get block info by number or latest");
+program.option("--transaction <hash>", "get transaction by hash");
+program.option("--receipt <hash>", "get transaction receipt by hash");
 
-program.option('--balance <Wallet address>', 'get balance of address')
-program.option('--transfer <Destination address>', 'destination address, source address specified by keystore or config')
-program.option('--amount <amount>', 'transfer amount')
+program.option("--balance <Wallet address>", "get balance of address");
+program.option("--transfer <Destination address>", "destination address, source address specified by keystore or config");
+program.option("--amount <amount>", "transfer amount");
 
-program.option('--deploy <contract json file>', 'deploy contract, if have parameter, set it in --parameters')
+program.option("--deploy <contract json file>", "deploy contract, if have parameter, set it in --parameters");
 
-program.option('--nonce <number>', 'specified nonce')
-program.option('--getNonce', 'get current nonce')
-program.option('--gas_price <number>', 'specified gasPrice, default 20000000000')
-program.option('--gas_limit <number>', 'specified gas limit, default 20000')
+program.option("--nonce <number>", "specified nonce");
+program.option("--getNonce", "get current nonce");
+program.option("--gas_price <number>", "specified gasPrice, default 20000000000");
+program.option("--gas_limit <number>", "specified gas limit, default 20000");
 
-program.option('--erc20 <string>', 'erc20 address')
-program.option('--erc721 <string>', 'erc721 address')
-program.option('--fingate <string>', 'fingate address')
+program.option("--erc20 <string>", "erc20 address");
+program.option("--erc721 <string>", "erc721 address");
+program.option("--fingate <string>", "fingate address");
 
-program.option('--abi <contract json file>', 'abi definition')
-program.option('--contractAddr <contract address>', 'contract address')
+program.option("--abi <contract json file>", "abi definition");
+program.option("--contractAddr <contract address>", "contract address");
 
-program.option('--method <string>', 'specified contract method name')
-program.option('--parameters <string>', 'specified contract parameters which seprator by |')
+program.option("--method <string>", "specified contract method name");
+program.option("--parameters <string>", "specified contract parameters which seprator by |");
 
 program.parse(process.argv);
 
 if (program.wallet_create) {
   if (!program.save_wallet) {
-    Keystore.processCreateWallet()
+    Keystore.processCreateWallet();
   }
 
   Keystore.saveKeystore();
 
-  return
+  return;
 }
 
 if (program.import_private_to_keystore) {
@@ -91,31 +91,31 @@ if (program.import_private_to_keystore) {
 }
 
 function getNetwork(_network) {
-  let type = typeof _network
-  if (type === 'number') {
-    _options.network = _network
+  let type = typeof _network;
+  if (type === "number") {
+    _options.network = _network;
   }
-  if (type === 'string') {
-    _options.network = _network.toLowerCase() === 'main' ? 99 : 101
+  if (type === "string") {
+    _options.network = _network.toLowerCase() === "main" ? 99 : 101;
   }
 }
 
 // 获取配置文件
-let _config = program.config
-let _options = { "network": 99 }
+let _config = program.config;
+let _options = { network: 99 };
 
 // 如果文件位置没有通过参数传递
 if (!!!_config) {
-  _config = getBaseHome() + '/config.json'
+  _config = getBaseHome() + "/config.json";
 }
 if (!fs.existsSync(_config)) {
-  console.log('can not get', _config, "file, create it manula!")
+  console.log("can not get", _config, "file, create it manula!");
   process.exit();
 }
 
 // 读取文件
 try {
-  _options = Object.assign(_options, JSON.parse(fs.readFileSync(_config, 'utf-8')))
+  _options = Object.assign(_options, JSON.parse(fs.readFileSync(_config, "utf-8")));
   if (!_options.gasLimit) {
     _options.gasLimit = 20000;
   }
@@ -123,11 +123,11 @@ try {
     _options.gasPrice = 20000000000;
   }
 } catch (e) {
-  console.log('Parse config file fail, check and correct it', e)
-  process.exit()
+  console.log("Parse config file fail, check and correct it", e);
+  process.exit();
 }
 
-getNetwork(program.network)
+getNetwork(program.network);
 
 if (program.keystore) {
   _options.wallet = Object.assign(_options.wallet, Keystore.getWalletFromKeystore(program.keystore, program.password));
@@ -145,7 +145,7 @@ if (!!program.server) {
 
 async function getBalance() {
   let balance = await inst.getBalance(program.balance);
-  console.log('balance:', balance);
+  console.log("balance:", balance);
 }
 async function getCurrentNonce(address) {
   let nonce = await inst.getNonce(address);
@@ -154,17 +154,17 @@ async function getCurrentNonce(address) {
 
 async function getBlock(block) {
   let info = await inst.getBlock(block);
-  console.log('block:', JSON.stringify(info, null, 2));
+  console.log("block:", JSON.stringify(info, null, 2));
 }
 
 async function getTransaction(hash) {
   let info = await inst.getTransaction(hash);
-  console.log('transaction:', JSON.stringify(info, null, 2));
+  console.log("transaction:", JSON.stringify(info, null, 2));
 }
 
 async function getTransactionReceipt(hash) {
   let info = await inst.getTransactionReceipt(hash);
-  console.log('transaction receipt:', JSON.stringify(info, null, 2));
+  console.log("transaction receipt:", JSON.stringify(info, null, 2));
 }
 async function getNonce(address) {
   if (!program.nonce) {
@@ -176,36 +176,36 @@ async function getNonce(address) {
 async function transfer(dest, amount) {
   let nonce = await getNonce(_options.wallet.address);
   let gasPrice = await inst.getGasPrice(_options.gasPrice);
-  let tx = inst.getTx(_options.wallet.address, dest, nonce, _options.gasLimit, gasPrice, amount, '');
+  let tx = inst.getTx(_options.wallet.address, dest, nonce, _options.gasLimit, gasPrice, amount, "");
   let hash = await inst.sendRawSignedTransaction(inst.signTransaction(tx, _options.wallet.secret));
-  console.log('transfer hash:', hash);
+  console.log("transfer hash:", hash);
 }
 
 const sleep = (milliseconds) => {
-  return new Promise(resolve => setTimeout(resolve, milliseconds))
-}
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+};
 
 function getFile(filename) {
   if (!fs.existsSync(filename)) {
     filename = __dirname + "/" + filename;
     if (!fs.existsSync(filename)) {
-      console.log('can not find ', filename);
+      console.log("can not find ", filename);
       process.exit();
     }
   }
   try {
-    return JSON.parse(fs.readFileSync(filename, 'utf-8'))
+    return JSON.parse(fs.readFileSync(filename, "utf-8"));
   } catch (e) {
-    console.log('get file ', filename, 'error', e)
-    process.exit(-1)
+    console.log("get file ", filename, "error", e);
+    process.exit(-1);
   }
 }
 
 async function deploy(compiledJson) {
   let _json = getFile(compiledJson);
   if (!_json.bytecode) {
-    console.log('can not get byte code')
-    process.exit(-1)
+    console.log("can not get byte code");
+    process.exit(-1);
   }
 
   let abi = _json.abi;
@@ -223,7 +223,7 @@ async function deploy(compiledJson) {
     calldata = _json.bytecode;
   } else {
     const typename = constructor.inputs.map((input) => input.type);
-    calldata = _json.bytecode + inst._chain3.encodeParams(typename, eval('[' + program.parameters + ']'));
+    calldata = _json.bytecode + inst._chain3.encodeParams(typename, eval("[" + program.parameters + "]"));
   }
   let nonce = await getNonce(_options.wallet.address);
   let gasPrice = await inst.getGasPrice(_options.gasPrice);
@@ -233,25 +233,25 @@ async function deploy(compiledJson) {
   try {
     hash = await inst.sendRawSignedTransaction(signed);
   } catch (e) {
-    console.log(e)
-    process.exit(-1)
+    console.log(e);
+    process.exit(-1);
   }
-  console.log('create contract transaction hash:', hash);
-  console.log('waiting for contract address.......');
+  console.log("create contract transaction hash:", hash);
+  console.log("waiting for contract address.......");
   for (var i = 0; i < 20; i++) {
     await sleep(2000);
     let receipt = await inst.getTransactionReceipt(hash);
     if (receipt && receipt.contractAddress) {
-      console.log('contract address:', receipt.contractAddress);
+      console.log("contract address:", receipt.contractAddress);
       return;
     }
   }
 
-  console.log('can not get contract address, try get transaction receipt later');
+  console.log("can not get contract address, try get transaction receipt later");
 }
 
 // 初始化连接
-let inst = new utils.Moac(_options.server, _options.network == 99)
+let inst = new utils.Moac(_options.server, _options.network == 99);
 inst.initChain3();
 
 if (program.block) {
@@ -285,7 +285,7 @@ if (program.getNonce) {
 if (program.transfer) {
   var amount = Number(program.amount);
   if (isNaN(amount)) {
-    console.log('amount is', program.amount, 'invalid');
+    console.log("amount is", program.amount, "invalid");
     process.exit();
   }
   transfer(program.transfer, amount);
@@ -294,9 +294,9 @@ if (program.transfer) {
 
 function getMethodCall() {
   if (!program.parameters) {
-    return "sc.callABI(\"" + program.method + "\")";
+    return 'sc.callABI("' + program.method + '")';
   }
-  return "sc.callABI(\"" + program.method + "\"," + program.parameters + ")"
+  return 'sc.callABI("' + program.method + '",' + program.parameters + ")";
 }
 
 async function callContract() {
@@ -305,12 +305,12 @@ async function callContract() {
   let sc = new utils.smartContract();
   sc.init(program.contractAddr, inst, abi);
   // 该变量是为用户在外部传入chain3的函数调用 eval(getMethodCall()) 时用的
-  let chain3 = inst._chain3
+  let chain3 = inst._chain3;
 
   // 确定接口类型
   const abiItem = abi.find((item) => item.name == program.method);
   if (!abiItem) {
-    console.log('Can not find method', program.method, "in abi definition.");
+    console.log("Can not find method", program.method, "in abi definition.");
     process.exit();
   }
   const { stateMutability } = abiItem;
@@ -335,7 +335,6 @@ async function callContract() {
     const hash = await inst.sendTransactionWithCallData(_options.wallet.secret, program.contractAddr, amount, calldata, _options);
     console.log("hash:", hash);
   }
-
 }
 
 if (program.abi) {

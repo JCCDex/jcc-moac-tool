@@ -8,7 +8,8 @@
   "main": "lib/index.js",
   "scripts": {
     "deploy": "./publish.sh",
-    "test": "gulp"
+    "test": "gulp",
+    "pretty": "prettier --write {src,test}/**/*.{js,ts} erc20abi.json"
   },
   "bin": {
     "jcc_moac_tool": "src/jcc_moac_tool",
@@ -58,7 +59,15 @@
     "gulp": "^4.0.0",
     "gulp-babel": "^8.0.0",
     "gulp-eslint": "^5.0.0",
+    "husky": "^3.1.0",
     "mocha": "^5.2.0",
-    "nyc": "^14.1.1"
+    "nyc": "^14.1.1",
+    "prettier": "^1.19.1",
+    "pretty-quick": "^2.0.1"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "pretty-quick --staged"
+    }
   }
 }
