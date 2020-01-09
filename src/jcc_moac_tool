@@ -8,6 +8,7 @@ const Keystore = require("./jcc_moac_keystore");
 const SolidityFunction = require("chain3/lib/chain3/function");
 const ethers = require("ethers");
 const abiCoder = ethers.utils.defaultAbiCoder;
+const eth_ens_namehash = require('eth-ens-namehash');
 
 Object.defineProperty(SolidityFunction.prototype, "call", {
   get() {
@@ -31,7 +32,7 @@ function getBaseHome() {
   return (process.env.HOME || process.env.USERPROFILE) + "/.jcc_moac_tool";
 }
 
-program.version("0.0.17");
+program.version("0.0.18");
 program.usage("--help", "Show moac_tools help");
 
 let _description = "MOAC command line tools";
@@ -305,7 +306,8 @@ async function callContract() {
   let sc = new utils.smartContract();
   sc.init(program.contractAddr, inst, abi);
   // 该变量是为用户在外部传入chain3的函数调用 eval(getMethodCall()) 时用的
-  let chain3 = inst._chain3;
+  let chain3 = inst._chain3
+  let namehash = eth_ens_namehash.hash
 
   // 确定接口类型
   const abiItem = abi.find((item) => item.name == program.method);
