@@ -1,6 +1,6 @@
 {
   "name": "jcc_moac_tool",
-  "version": "0.0.18",
+  "version": "0.0.19",
   "description": "jccdex jcc moac tool",
   "files": [
     "lib"
@@ -41,7 +41,7 @@
     "ethereumjs-wallet": "^0.6.3",
     "ethers": "^4.0.37",
     "fs": "0.0.1-security",
-    "jcc-moac-utils": "^0.2.2",
+    "jcc-moac-utils": "^0.2.9",
     "readline-sync": "^1.4.9"
   },
   "devDependencies": {

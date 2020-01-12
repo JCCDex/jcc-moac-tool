@@ -178,7 +178,7 @@ async function transfer(dest, amount) {
   let nonce = await getNonce(_options.wallet.address);
   let gasPrice = await inst.getGasPrice(_options.gasPrice);
   let tx = inst.getTx(_options.wallet.address, dest, nonce, _options.gasLimit, gasPrice, amount, "");
-  let hash = await inst.sendRawSignedTransaction(inst.signTransaction(tx, _options.wallet.secret));
+  let hash = await inst.sendSignedTransaction(inst.signTransaction(tx, _options.wallet.secret));
   console.log("transfer hash:", hash);
 }
 
@@ -232,7 +232,7 @@ async function deploy(compiledJson) {
   let signed = await inst.signTransaction(tx, _options.wallet.secret);
   let hash;
   try {
-    hash = await inst.sendRawSignedTransaction(signed);
+    hash = await inst.sendSignedTransaction(signed);
   } catch (e) {
     console.log(e);
     process.exit(-1);
@@ -327,6 +327,7 @@ async function callContract() {
     }
   } else {
     const calldata = await eval(getMethodCall());
+    console.log(getMethodCall(), calldata);
     let amount = "0";
     if (program.amount) {
       amount = program.amount + "";
