@@ -56,6 +56,7 @@ program.option("--receipt <hash>", "get transaction receipt by hash");
 program.option("--balance <Wallet address>", "get balance of address");
 program.option("--transfer <Destination address>", "destination address, source address specified by keystore or config");
 program.option("--amount <amount>", "transfer amount");
+program.option("--memo <memo string>", "transfer transaction memo");
 
 program.option("--deploy <contract json file>", "deploy contract, if have parameter, set it in --parameters");
 
@@ -177,7 +178,8 @@ async function getNonce(address) {
 async function transfer(dest, amount) {
   let nonce = await getNonce(_options.wallet.address);
   let gasPrice = await inst.getGasPrice(_options.gasPrice);
-  let tx = inst.getTx(_options.wallet.address, dest, nonce, _options.gasLimit, gasPrice, amount, "");
+  let memo = !program.memo ? "" : inst._chain3.toHex(program.memo);
+  let tx = inst.getTx(_options.wallet.address, dest, nonce, _options.gasLimit, gasPrice, amount, memo);
   let hash = await inst.sendSignedTransaction(inst.signTransaction(tx, _options.wallet.secret));
   console.log("transfer hash:", hash);
 }
