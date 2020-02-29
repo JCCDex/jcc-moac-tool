@@ -41,7 +41,7 @@
     "ethereumjs-wallet": "^0.6.3",
     "ethers": "^4.0.37",
     "fs": "0.0.1-security",
-    "jcc-moac-utils": "^0.2.9",
+    "jcc-moac-utils": "^0.3.4",
     "readline-sync": "^1.4.9"
   },
   "devDependencies": {

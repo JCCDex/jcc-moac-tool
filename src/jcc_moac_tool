@@ -110,6 +110,9 @@ let _options = { network: 99 };
 if (!!!_config) {
   _config = getBaseHome() + "/config.json";
 }
+if (_config == "test") {
+  _config = getBaseHome() + "/config.test.json";
+}
 if (!fs.existsSync(_config)) {
   console.log("can not get", _config, "file, create it manula!");
   process.exit();
@@ -132,7 +135,12 @@ try {
 getNetwork(program.network);
 
 if (program.keystore) {
-  _options.wallet = Object.assign(_options.wallet, Keystore.getWalletFromKeystore(program.keystore, program.password));
+  let keystorePath = program.keystore;
+  // 兼容windows下的路径
+  if (keystorePath.indexOf("/") == -1 && keystorePath.indexOf("\\") == -1) {
+    keystorePath = getBaseHome() + "/" + keystorePath;
+  }
+  _options.wallet = Object.assign(_options.wallet, Keystore.getWalletFromKeystore(keystorePath, program.password));
 }
 
 if (!isNaN(Number(program.gas_limit))) {
