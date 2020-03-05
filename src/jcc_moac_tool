@@ -60,14 +60,13 @@ program.option("--memo <memo string>", "transfer transaction memo");
 
 program.option("--deploy <contract json file>", "deploy contract, if have parameter, set it in --parameters");
 
+program.option("--via <vnode proxy address>", "MOAC vnode proxy address, for appChain/subChain");
+program.option("--address <address>", "address parameter");
+
 program.option("--nonce <number>", "specified nonce");
-program.option("--getNonce", "get current nonce");
+program.option("--getNonce <string>", "get current nonce by address");
 program.option("--gas_price <number>", "specified gasPrice, default 20000000000");
 program.option("--gas_limit <number>", "specified gas limit, default 20000");
-
-program.option("--erc20 <string>", "erc20 address");
-program.option("--erc721 <string>", "erc721 address");
-program.option("--fingate <string>", "fingate address");
 
 program.option("--abi <contract json file>", "abi definition");
 program.option("--contractAddr <contract address>", "contract address");
@@ -110,8 +109,8 @@ let _options = { network: 99 };
 if (!!!_config) {
   _config = getBaseHome() + "/config.json";
 }
-if (_config == "test") {
-  _config = getBaseHome() + "/config.test.json";
+if (_config.indexOf("/") == -1 && _config.indexOf("\\") == -1 && _config.indexOf(".") == -1) {
+  _config = getBaseHome() + "/config." + _config + ".json";
 }
 if (!fs.existsSync(_config)) {
   console.log("can not get", _config, "file, create it manula!");
@@ -154,31 +153,66 @@ if (!!program.server) {
 }
 
 async function getBalance() {
-  let balance = await inst.getBalance(program.balance);
-  console.log("balance:", balance);
+  let balance = !program.via ? await inst.getBalance(program.balance) : await inst._chain3.scs.getBalance(program.via, program.balance);
+  console.log("balance:", inst._chain3.fromSha(balance));
 }
 async function getCurrentNonce(address) {
-  let nonce = await inst.getNonce(address);
+  let nonce = !!program.via ? await inst._chain3.scs.getNonce(program.via, address) : await inst.getNonce(address);
   console.log("current nonce:", nonce.toString());
 }
 
 async function getBlock(block) {
-  let info = await inst.getBlock(block);
+  if (isNaN(block)) {
+    if (block == 'earliest') {
+      block = 0;
+    }
+    if (block == 'latest') {
+      block = await inst._chain3.scs.getBlockNumber(program.via);
+    }
+  }
+  let info = !program.via ? await inst.getBlock(block) : await inst._chain3.scs.getBlock(program.via, block);
   console.log("block:", JSON.stringify(info, null, 2));
 }
 
 async function getTransaction(hash) {
-  let info = await inst.getTransaction(hash);
+  let info;
+  if (!program.via) {
+    info = await inst.getTransaction(hash);
+    console.log("transaction:", JSON.stringify(info, null, 2));
+    return;
+  }
+  // 子链处理
+  if (hash.indexOf("0x") == 0) {
+    // hash查找
+    info = await inst._chain3.scs.getTransactionByHash(program.via, hash);
+  } else {
+    // nonce查找
+    info = await inst._chain3.scs.getTransactionByNonce(program.via, program.address, Number(hash));
+  }
   console.log("transaction:", JSON.stringify(info, null, 2));
+  return;
 }
 
 async function getTransactionReceipt(hash) {
-  let info = await inst.getTransactionReceipt(hash);
+  let info;
+  if (!program.via) {
+    info = await inst.getTransactionReceipt(hash);
+    console.log("transaction receipt:", JSON.stringify(info, null, 2));
+    return;
+  }
+  // 子链处理
+  if (hash.indexOf("0x") == 0) {
+    // hash查找
+    info = await inst._chain3.scs.getReceiptByHash(program.via, hash);
+  } else {
+    // nonce查找
+    info = await inst._chain3.scs.getReceiptByNonce(program.via, program.address, Number(hash));
+  }
   console.log("transaction receipt:", JSON.stringify(info, null, 2));
 }
 async function getNonce(address) {
   if (!program.nonce) {
-    let n = await inst.getNonce(_options.wallet.address);
+    let n = !!program.via ? await inst._chain3.scs.getNonce(program.via, address) : await inst.getNonce(address);
     return n;
   }
   return program.nonce;
@@ -212,14 +246,7 @@ function getFile(filename) {
   }
 }
 
-async function deploy(compiledJson) {
-  let _json = getFile(compiledJson);
-  if (!_json.bytecode) {
-    console.log("can not get byte code");
-    process.exit(-1);
-  }
-
-  let abi = _json.abi;
+function getCallData(abi) {
   let constructor = abi.find((item) => item.type == "constructor");
   if (!constructor) {
     console.log("Can not find constructor in file", compiledJson, ", Please check it!");
@@ -236,9 +263,22 @@ async function deploy(compiledJson) {
     const typename = constructor.inputs.map((input) => input.type);
     calldata = _json.bytecode + inst._chain3.encodeParams(typename, eval("[" + program.parameters + "]"));
   }
+
+  return calldata;
+}
+async function deploy(compiledJson, forScs) {
+  let _json = getFile(compiledJson);
+  if (!_json.bytecode) {
+    console.log("can not get byte code");
+    process.exit(-1);
+  }
+
+  let calldata = getCallData(_json.abi);
+
   let nonce = await getNonce(_options.wallet.address);
-  let gasPrice = await inst.getGasPrice(_options.gasPrice);
-  let tx = inst.getTx(_options.wallet.address, null, nonce, _options.gasLimit, gasPrice, amount, calldata);
+  let gasPrice = forScs ? 0 : await inst.getGasPrice(_options.gasPrice);
+  let gasLimit = forScs ? 0 : _options.gasLimit;
+  let tx = inst.getTx(_options.wallet.address, null, nonce, gasLimit, gasPrice, amount, calldata, forScs ? program.via : undefined, forScs ? "0x03" : undefined);
   let signed = await inst.signTransaction(tx, _options.wallet.secret);
   let hash;
   try {
@@ -251,10 +291,18 @@ async function deploy(compiledJson) {
   console.log("waiting for contract address.......");
   for (var i = 0; i < 20; i++) {
     await sleep(2000);
-    let receipt = await inst.getTransactionReceipt(hash);
-    if (receipt && receipt.contractAddress) {
-      console.log("create contract", receipt.status == "0x1" ? "success" : "fail", "\ncontract address:", receipt.contractAddress);
-      return;
+    if (!forScs) {
+      let receipt = await inst.getTransactionReceipt(hash);
+      if (receipt && receipt.contractAddress) {
+        console.log("create contract", receipt.status == "0x1" ? "success" : "fail", "\ncontract address:", receipt.contractAddress);
+        return;
+      }
+    } else {
+      let receipt = await inst._chain3.scs.getReceiptByHash(program.via, hash);
+      if (receipt && receipt.contractAddress) {
+        console.log("create contract", receipt.status == "0x1" ? "success" : "fail", "\ncontract address:", receipt.contractAddress);
+        return;
+      }
     }
   }
 
@@ -264,7 +312,9 @@ async function deploy(compiledJson) {
 // 初始化连接
 let inst = new utils.Moac(_options.server, _options.network == 99);
 inst.initChain3();
-
+if (!!program.via) {
+  inst._chain3.setScsProvider(inst._chain3.currentProvider);
+}
 if (program.block) {
   getBlock(program.block);
   return;
@@ -281,7 +331,7 @@ if (program.receipt) {
 }
 
 if (program.deploy) {
-  deploy(program.deploy);
+  deploy(program.deploy, !!program.via);
   return;
 }
 
@@ -290,7 +340,7 @@ if (program.balance) {
   return;
 }
 if (program.getNonce) {
-  getCurrentNonce(_options.wallet.address);
+  getCurrentNonce(program.getNonce);
   return;
 }
 if (program.transfer) {
@@ -337,7 +387,7 @@ async function callContract() {
     }
   } else {
     const calldata = await eval(getMethodCall());
-    console.log(getMethodCall(), calldata);
+    // console.log(getMethodCall(), calldata);
     let amount = "0";
     if (program.amount) {
       amount = program.amount + "";
