@@ -60,7 +60,10 @@ program.option("--memo <memo string>", "transfer transaction memo");
 
 program.option("--deploy <contract json file>", "deploy contract, if have parameter, set it in --parameters");
 
-program.option("--via <vnode proxy address>", "MOAC vnode proxy address, for appChain/subChain");
+program.option("--via <vnode/subchain proxy address>", "MOAC vnode/subchain proxy address, for appChain/subChain, input vnode proxy address when deploy dapp, otherwise input subchain address");
+program.option("--subchain <subchain address>", "MOAC subchain address, for appChain/subChain");
+program.option("--registerDapp <contract address>", "MOAC subchain contract address, for appChain/subChain");
+program.option("--dappBase <dapp base address>", "DAPP base address, for appChain/subChain");
 program.option("--address <address>", "address parameter");
 
 program.option("--nonce <number>", "specified nonce");
@@ -153,11 +156,11 @@ if (!!program.server) {
 }
 
 async function getBalance() {
-  let balance = !program.via ? await inst.getBalance(program.balance) : await inst._chain3.scs.getBalance(program.via, program.balance);
+  let balance = !program.via ? await inst.getBalance(program.balance) : await scsInst._chain3.scs.getBalance(program.via, program.balance);
   console.log("balance:", inst._chain3.fromSha(balance));
 }
-async function getCurrentNonce(address) {
-  let nonce = !!program.via ? await inst._chain3.scs.getNonce(program.via, address) : await inst.getNonce(address);
+async function getCurrentNonce(address, via) {
+  let nonce = !!via ? await scsInst._chain3.scs.getNonce(via, address) : await inst.getNonce(address);
   console.log("current nonce:", nonce.toString());
 }
 
@@ -167,10 +170,10 @@ async function getBlock(block) {
       block = 0;
     }
     if (block == 'latest') {
-      block = await inst._chain3.scs.getBlockNumber(program.via);
+      block = await scsInst._chain3.scs.getBlockNumber(program.via);
     }
   }
-  let info = !program.via ? await inst.getBlock(block) : await inst._chain3.scs.getBlock(program.via, block);
+  let info = !program.via ? await inst.getBlock(block) : await scsInst._chain3.scs.getBlock(program.via, block);
   console.log("block:", JSON.stringify(info, null, 2));
 }
 
@@ -184,10 +187,10 @@ async function getTransaction(hash) {
   // 子链处理
   if (hash.indexOf("0x") == 0) {
     // hash查找
-    info = await inst._chain3.scs.getTransactionByHash(program.via, hash);
+    info = await scsInst._chain3.scs.getTransactionByHash(program.via, hash);
   } else {
     // nonce查找
-    info = await inst._chain3.scs.getTransactionByNonce(program.via, program.address, Number(hash));
+    info = await scsInst._chain3.scs.getTransactionByNonce(program.via, program.address, Number(hash));
   }
   console.log("transaction:", JSON.stringify(info, null, 2));
   return;
@@ -203,22 +206,22 @@ async function getTransactionReceipt(hash) {
   // 子链处理
   if (hash.indexOf("0x") == 0) {
     // hash查找
-    info = await inst._chain3.scs.getReceiptByHash(program.via, hash);
+    info = await scsInst._chain3.scs.getReceiptByHash(program.via, hash);
   } else {
     // nonce查找
-    info = await inst._chain3.scs.getReceiptByNonce(program.via, program.address, Number(hash));
+    info = await scsInst._chain3.scs.getReceiptByNonce(program.via, program.address, Number(hash));
   }
   console.log("transaction receipt:", JSON.stringify(info, null, 2));
 }
-async function getNonce(address) {
+async function getNonce(address, via) {
   if (!program.nonce) {
-    let n = !!program.via ? await inst._chain3.scs.getNonce(program.via, address) : await inst.getNonce(address);
+    let n = !!via ? await scsInst._chain3.scs.getNonce(via, address) : await inst.getNonce(address);
     return n;
   }
   return program.nonce;
 }
 async function transfer(dest, amount) {
-  let nonce = await getNonce(_options.wallet.address);
+  let nonce = await getNonce(_options.wallet.address, program.via);
   let gasPrice = await inst.getGasPrice(_options.gasPrice);
   let memo = !program.memo ? "" : inst._chain3.toHex(program.memo);
   let tx = inst.getTx(_options.wallet.address, dest, nonce, _options.gasLimit, gasPrice, amount, memo);
@@ -246,8 +249,8 @@ function getFile(filename) {
   }
 }
 
-function getCallData(abi) {
-  let constructor = abi.find((item) => item.type == "constructor");
+function getCallData(_json) {
+  let constructor = _json.abi.find((item) => item.type == "constructor");
   if (!constructor) {
     console.log("Can not find constructor in file", compiledJson, ", Please check it!");
   }
@@ -266,19 +269,47 @@ function getCallData(abi) {
 
   return calldata;
 }
+async function registerDapp(regDappAddr, dappOwner, dappABI) {
+  if (!program.dappBase) {
+    console.log("miss dapp base address");
+    process.exit();
+  }
+  let nonce = await getNonce(_options.wallet.address, program.subchain);
+  // gasPrice, gasLimit要看具体子链要求
+  let gasPrice = 0;
+  let gasLimit = 0;
+  let calldata = program.dappBase + inst._chain3.sha3('registerDapp(address,address,string)').substr(2, 8)
+    + inst._chain3.encodeParams(['address', 'address', 'string'], [regDappAddr, dappOwner, dappABI]);
+  let tx = inst.getTx(_options.wallet.address, program.subchain, nonce, gasLimit, gasPrice, "0", calldata, program.via, "0x01");
+
+  let signed = await inst.signTransaction(tx, _options.wallet.secret);
+  let hash;
+  try {
+    hash = await inst.sendSignedTransaction(signed);
+  } catch (e) {
+    console.log(e);
+    process.exit(-1);
+  }
+  console.log("registr dapp transaction hash:", hash);
+
+}
 async function deploy(compiledJson, forScs) {
   let _json = getFile(compiledJson);
   if (!_json.bytecode) {
     console.log("can not get byte code");
     process.exit(-1);
   }
+  if (!program.dappBase) {
+    console.log("miss dapp base address");
+    process.exit();
+  }
 
-  let calldata = getCallData(_json.abi);
+  let calldata = getCallData(_json);
 
-  let nonce = await getNonce(_options.wallet.address);
+  let nonce = await getNonce(_options.wallet.address, program.subchain);
   let gasPrice = forScs ? 0 : await inst.getGasPrice(_options.gasPrice);
   let gasLimit = forScs ? 0 : _options.gasLimit;
-  let tx = inst.getTx(_options.wallet.address, null, nonce, gasLimit, gasPrice, amount, calldata, forScs ? program.via : undefined, forScs ? "0x03" : undefined);
+  let tx = inst.getTx(_options.wallet.address, forScs ? program.subchain : null, nonce, gasLimit, gasPrice, amount, calldata, forScs ? program.via : undefined, forScs ? "0x03" : undefined);
   let signed = await inst.signTransaction(tx, _options.wallet.secret);
   let hash;
   try {
@@ -289,7 +320,7 @@ async function deploy(compiledJson, forScs) {
   }
   console.log("create contract transaction hash:", hash);
   console.log("waiting for contract address.......");
-  for (var i = 0; i < 20; i++) {
+  for (var i = 0; i < 60; i++) {
     await sleep(2000);
     if (!forScs) {
       let receipt = await inst.getTransactionReceipt(hash);
@@ -298,9 +329,14 @@ async function deploy(compiledJson, forScs) {
         return;
       }
     } else {
-      let receipt = await inst._chain3.scs.getReceiptByHash(program.via, hash);
+      let receipt = await scsInst._chain3.scs.getReceiptByHash(program.subchain, hash);
       if (receipt && receipt.contractAddress) {
-        console.log("create contract", receipt.status == "0x1" ? "success" : "fail", "\ncontract address:", receipt.contractAddress);
+        console.log("create contract", receipt.failed == false ? "success" : "fail", "\ncontract address:", receipt.contractAddress);
+
+        // register dapp
+        if (receipt.failed == false) {
+          await registerDapp(receipt.contractAddress, _options.wallet.address, _json.bytecode);
+        }
         return;
       }
     }
@@ -311,7 +347,14 @@ async function deploy(compiledJson, forScs) {
 
 // 初始化连接
 let inst = new utils.Moac(_options.server, _options.network == 99);
+let scsInst = new utils.Moac(_options.scsServer, _options.network == 99);
 inst.initChain3();
+scsInst.initChain3();
+// !!! 一个实例不能保持两个不同的provider!!!
+if (!!_options.scsServer) {
+  scsInst.setScs(_options.scsServer);
+}
+
 if (!!program.via) {
   inst._chain3.setScsProvider(inst._chain3.currentProvider);
 }
@@ -340,7 +383,7 @@ if (program.balance) {
   return;
 }
 if (program.getNonce) {
-  getCurrentNonce(program.getNonce);
+  getCurrentNonce(program.getNonce, program.via);
   return;
 }
 if (program.transfer) {
