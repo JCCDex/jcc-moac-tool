@@ -71,6 +71,8 @@ program.option("--dappBase <dapp base address>", "DAPP base address, for appChai
 // program.option("--registerDapp <contract address>", "MOAC subchain contract address, for appChain/subChain");
 program.option("--address <address>", "address parameter");
 
+program.option("--txpool", "show tx pool");
+
 program.option("--nonce <number>", "specified nonce");
 program.option("--getNonce <string>", "get current nonce by address");
 program.option("--gas_price <number>", "specified gasPrice, default 20000000000");
@@ -372,6 +374,17 @@ async function deploy(compiledJson) {
   console.log("can not get contract address, try get transaction receipt later");
 }
 
+async function getTxpool() {
+  let pool;
+  if (program.scs) {
+    pool = await scsInst._chain3.scs.getTxpool(_options.subChain);
+  } else {
+    pool = "waiting to devlope!";
+  }
+
+  console.log(JSON.stringify(pool, null, 2));
+}
+
 // 初始化连接
 let inst = new utils.Moac(_options.server, _options.network == 99);
 inst.initChain3();
@@ -427,6 +440,10 @@ if (program.transfer) {
     process.exit();
   }
   transfer(program.transfer, amount);
+  return;
+}
+if (program.txpool) {
+  getTxpool();
   return;
 }
 
@@ -489,11 +506,10 @@ async function callContract() {
       nonce = program.nonce;
     } else {
       nonce = await getNonce(_options.wallet.address, program.scs);
-      console.log(nonce);
     }
 
     let tx = inst.getTx(_options.wallet.address, !!program.scs ? _options.subChain : program.contractAddr, nonce, 0, 0, amount, calldata, !!program.scs ? _options.vnodeVia : undefined, !!program.scs ? "0x1" : "0x0");
-    console.log(tx);
+    console.log("transaction detail:\n", JSON.stringify(tx));
     let signed = await inst.signTransaction(tx, _options.wallet.secret);
     let hash;
     try {
