@@ -1,6 +1,6 @@
 {
   "name": "jcc_moac_tool",
-  "version": "0.0.26",
+  "version": "0.0.27",
   "description": "jccdex jcc moac tool",
   "files": [
     "lib"
