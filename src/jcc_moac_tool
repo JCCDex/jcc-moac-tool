@@ -44,6 +44,7 @@ program.option("--wallet_create", "Create new MOAC wallet");
 program.option("--save_wallet", "save wallet to keystore file when create");
 program.option("--import_private_to_keystore", "import private key to keystore file");
 program.option("--keystore <keystore file>", "keystore file path");
+program.option("--show_secret", "show account secret");
 program.option("--password <keystore file password>", "keystore password");
 
 program.option("--network <network id>", "specified MOAC network id, mainnet is 99, testnet is 101");
@@ -150,6 +151,9 @@ if (program.keystore) {
     keystorePath = getBaseHome() + "/" + keystorePath;
   }
   _options.wallet = Object.assign(_options.wallet, Keystore.getWalletFromKeystore(keystorePath, program.password));
+  if (!!program.show_secret) {
+    console.log(JSON.stringify(_options.wallet, null, 2));
+  }
 }
 
 if (!isNaN(Number(program.gas_limit))) {
@@ -509,7 +513,7 @@ async function callContract() {
     }
 
     let tx = inst.getTx(_options.wallet.address, !!program.scs ? _options.subChain : program.contractAddr, nonce, 0, 0, amount, calldata, !!program.scs ? _options.vnodeVia : undefined, !!program.scs ? "0x1" : "0x0");
-    console.log("transaction detail:\n", JSON.stringify(tx));
+    console.log("transaction detail:\n", JSON.stringify(tx, null, 2));
     let signed = await inst.signTransaction(tx, _options.wallet.secret);
     let hash;
     try {
