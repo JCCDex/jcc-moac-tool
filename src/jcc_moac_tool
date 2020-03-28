@@ -512,7 +512,9 @@ async function callContract() {
       nonce = await getNonce(_options.wallet.address, program.scs);
     }
 
-    let tx = inst.getTx(_options.wallet.address, !!program.scs ? _options.subChain : program.contractAddr, nonce, 0, 0, amount, calldata, !!program.scs ? _options.vnodeVia : undefined, !!program.scs ? "0x1" : "0x0");
+    let gasPrice = !!program.scs ? 0 : await inst.getGasPrice(_options.gasPrice);
+    let gasLimit = !!program.scs ? 0 : _options.gasLimit;
+    let tx = inst.getTx(_options.wallet.address, !!program.scs ? _options.subChain : program.contractAddr, nonce, gasLimit, gasPrice, amount, calldata, !!program.scs ? _options.vnodeVia : undefined, !!program.scs ? "0x1" : "0x0");
     console.log("transaction detail:\n", JSON.stringify(tx, null, 2));
     let signed = await inst.signTransaction(tx, _options.wallet.secret);
     let hash;
